@@ -1,12 +1,17 @@
 from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import pickle
+import os
 from flask_cors import CORS
 
-loan_Prediction = Flask(__name__)
+loan_Prediction = Flask(__name__, 
+                       template_folder='../templates', 
+                       static_folder='../static')
 CORS(loan_Prediction)
 
-with open("Loan_approval_pred_model.pkl", 'rb') as lp:
+# Load model from correct path
+model_path = os.path.join(os.path.dirname(__file__), '..', 'Loan_approval_pred_model.pkl')
+with open(model_path, 'rb') as lp:
     model = pickle.load(lp)
 
 @loan_Prediction.route('/')
@@ -35,5 +40,4 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    loan_Prediction.run(debug=True, port=5000)
+app = loan_Prediction
