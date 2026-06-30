@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Loan Eligibility Checker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 50%, #f8f9ff 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+      color: #1a1a2e;
+    }
+    .container { width: 100%; max-width: 640px; }
+    .hero { text-align: center; margin-bottom: 28px; }
+    .hero-icon {
+      width: 64px; height: 64px;
+      background: #2563eb; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .hero-icon i { font-size: 28px; color: #fff; }
+    .hero h1 { font-size: 26px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .hero p { font-size: 15px; color: #64748b; }
+    .error-toast {
+      background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626;
+      border-radius: 10px; padding: 12px 16px; font-size: 14px;
+      margin-bottom: 16px; display: none; align-items: center; gap: 10px;
+    }
+    .error-toast.show { display: flex; }
+    .result-card {
+      border-radius: 14px; border: 1px solid;
+      padding: 18px 20px; display: flex; align-items: center; gap: 16px;
+      margin-bottom: 20px; animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .result-card.eligible   { background: #f0fdf4; border-color: #86efac; }
+    .result-card.ineligible { background: #fff1f2; border-color: #fca5a5; }
+    .result-card i { font-size: 40px; flex-shrink: 0; }
+    .result-card.eligible   i { color: #16a34a; }
+    .result-card.ineligible i { color: #dc2626; }
+    .result-card h2 { font-size: 17px; font-weight: 600; margin-bottom: 3px; }
+    .result-card.eligible   h2 { color: #15803d; }
+    .result-card.ineligible h2 { color: #b91c1c; }
+    .result-card p { font-size: 13px; color: #6b7280; }
+    .card {
+      background: #fff; border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      padding: 28px; margin-bottom: 16px;
+    }
+    .section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 18px;
+    }
+    .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 480px) { .fields-grid { grid-template-columns: 1fr; } }
+    .field-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .field-wrap label {
+      font-size: 13px; font-weight: 500; color: #475569;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .field-wrap label i { color: #2563eb; font-size: 14px; }
+    .field-wrap input {
+      height: 42px; padding: 0 12px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      background: #f8fafc; font-size: 14px; color: #1a1a2e;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field-wrap input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      background: #fff;
+    }
+    .field-wrap input::placeholder { color: #cbd5e1; }
+    .actions { display: flex; gap: 12px; }
+    .btn-clear {
+      padding: 0 22px; height: 44px; border-radius: 10px;
+      border: 1.5px solid #e2e8f0; background: #f8fafc;
+      color: #64748b; font-size: 14px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: background 0.15s;
+    }
+    .btn-clear:hover { background: #f1f5f9; }
+    .btn-check {
+      flex: 1; height: 44px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #fff; font-size: 14px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-check:hover  { opacity: 0.92; }
+    .btn-check:active { transform: scale(0.98); }
+    .btn-check:disabled { opacity: 0.55; cursor: not-allowed; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 480px) { .info-grid { grid-template-columns: 1fr 1fr; } }
+    .info-tile {
+      background: #fff; border-radius: 12px;
+      border: 1px solid #e2e8f0; padding: 14px 16px;
+    }
+    .info-tile .t-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+    .info-tile .t-val   { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-icon"><i class="fa-solid fa-building-columns"></i></div>
+    <h1>Loan Eligibility Checker</h1>
+    <p>Fill in your financial details to see if you qualify for a bank loan.</p>
+  </div>
+
+  <div class="error-toast" id="error-toast">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span id="error-msg"></span>
+  </div>
+
+  <div id="result-area"></div>
+
+  <div class="card">
+    <div class="section-label">Personal &amp; Financial Information</div>
+    <div class="fields-grid">
+      <div class="field-wrap">
+        <label for="age"><i class="fa-solid fa-user"></i> Age</label>
+        <input id="age" type="number" min="18" max="100" placeholder="e.g. 32" />
+      </div>
+      <div class="field-wrap">
+        <label for="income"><i class="fa-solid fa-indian-rupee-sign"></i> Annual Income (₹)</label>
+        <input id="income" type="number" min="0" placeholder="e.g. 600000" />
+      </div>
+      <div class="field-wrap">
+        <label for="credit"><i class="fa-solid fa-chart-bar"></i> Credit Score</label>
+        <input id="credit" type="number" min="300" max="900" placeholder="300 – 900" />
+      </div>
+      <div class="field-wrap">
+        <label for="years"><i class="fa-solid fa-briefcase"></i> Years Employed</label>
+        <input id="years" type="number" min="0" step="0.5" placeholder="e.g. 4.5" />
+      </div>
+      <div class="field-wrap">
+        <label for="debt"><i class="fa-solid fa-percent"></i> Debt Ratio (%)</label>
+        <input id="debt" type="number" min="0" max="100" step="0.1" placeholder="e.g. 28.5" />
+      </div>
+      <div class="field-wrap">
+        <label for="accounts"><i class="fa-solid fa-credit-card"></i> Number of Accounts</label>
+        <input id="accounts" type="number" min="0" placeholder="e.g. 3" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-clear" onclick="clearAll()">
+        <i class="fa-solid fa-rotate-left"></i> Clear
+      </button>
+      <button class="btn-check" id="check-btn" onclick="checkEligibility()">
+        <i class="fa-solid fa-shield-halved"></i> Check Eligibility
+      </button>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-tile">
+      <div class="t-label">Min. Credit Score</div>
+      <div class="t-val">650+</div>
+    </div>
+    <div class="info-tile">
+      <div class="t-label">Max Debt Ratio</div>
+      <div class="t-val">40%</div>
+    </div>
+    <div class="info-tile">
+      <div class="t-label">Min. Employment</div>
+      <div class="t-val">1 Year</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showError(msg) {
+    const toast = document.getElementById('error-toast');
+    document.getElementById('error-msg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  function clearFields() {
+    ['age','income','credit','years','debt','accounts'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+
+  function clearAll() {
+    clearFields();
+    document.getElementById('result-area').innerHTML = '';
+    document.getElementById('error-toast').classList.remove('show');
+  }
+
+  function setLoading(loading) {
+    const btn = document.getElementById('check-btn');
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Checking...';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Check Eligibility';
+    }
+  }
+
+  function showResult(eligible) {
+    const area = document.getElementById('result-area');
+    if (eligible) {
+      area.innerHTML = `
+        <div class="result-card eligible">
+          <i class="fa-solid fa-circle-check"></i>
+          <div>
+            <h2>Loan Approved</h2>
+            <p>You meet all the eligibility criteria. You may proceed with your loan application.</p>
+          </div>
+        </div>`;
+    } else {
+      area.innerHTML = `
+        <div class="result-card ineligible">
+          <i class="fa-solid fa-circle-xmark"></i>
+          <div>
+            <h2>Not Eligible</h2>
+            <p>You do not meet the current eligibility criteria. Consider improving your credit score or reducing your debt ratio.</p>
+          </div>
+        </div>`;
+    }
+  }
+
+  async function checkEligibility() {
+    const age      = parseInt(document.getElementById('age').value);
+    const income   = parseFloat(document.getElementById('income').value);
+    const credit   = parseInt(document.getElementById('credit').value);
+    const years    = parseFloat(document.getElementById('years').value);
+    const debt     = parseFloat(document.getElementById('debt').value);
+    const accounts = parseInt(document.getElementById('accounts').value);
+
+    if ([age, income, credit, years, debt, accounts].some(v => isNaN(v))) {
+      showError('Please fill in all fields with valid numbers.'); return;
+    }
+    if (age < 18 || age > 100)        { showError('Age must be between 18 and 100.'); return; }
+    if (credit < 300 || credit > 900) { showError('Credit score must be between 300 and 900.'); return; }
+    if (debt < 0 || debt > 100)       { showError('Debt ratio must be between 0 and 100.'); return; }
+
+    document.getElementById('result-area').innerHTML = '';
+    setLoading(true);
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          age, income,
+          credit_score: credit,
+          years_employed: years,
+          debt_ratio: debt,
+          num_accounts: accounts
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.eligibility) {
+        showResult(data.eligibility === 'Eligible');
+        clearFields();
+      } else if (data.error) {
+        showError('Server error: ' + data.error);
+      } else {
+        showError('Unexpected response from server.');
+      }
+    } catch (e) {
+      showError('Could not connect to the server.');
+    } finally {
+      setLoading(false);
+    }
+  }
+</script>
+
+</body>
+</html>
