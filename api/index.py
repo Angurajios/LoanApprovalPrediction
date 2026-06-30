@@ -10,6 +10,7 @@ app = Flask(__name__,
 
 CORS(app)
 
+# Load model
 try:
     model_path = os.path.join(os.path.dirname(__file__), '..', 'Loan_approval_pred_model.pkl')
     with open(model_path, 'rb') as lp:
@@ -50,6 +51,3 @@ def predict():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
