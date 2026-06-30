@@ -13,19 +13,18 @@ app = Flask(
 
 CORS(app)
 
-# -----------------------------
+# ----------------------------------------------------
 # Load Model
-# -----------------------------
+# ----------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MODEL_PATH = os.path.join(BASE_DIR, "Loan_approval_pred_model.pkl")
 
 print("=" * 60)
-print("BASE_DIR :", BASE_DIR)
-print("MODEL_PATH :", MODEL_PATH)
-print("MODEL EXISTS :", os.path.exists(MODEL_PATH))
+print("Python Version :", os.sys.version)
+print("Base Directory :", BASE_DIR)
+print("Model Path     :", MODEL_PATH)
+print("Model Exists   :", os.path.exists(MODEL_PATH))
 print("=" * 60)
-
-model = None
 
 try:
     with open(MODEL_PATH, "rb") as f:
@@ -34,36 +33,34 @@ try:
     print("✅ Model Loaded Successfully")
     print("Model Type :", type(model))
 
-except Exception as e:
-    print("❌ MODEL LOADING FAILED")
+except Exception:
+    print("❌ Error Loading Model")
     traceback.print_exc()
-    model = None
+    raise
 
 
-# -----------------------------
+# ----------------------------------------------------
 # Home Page
-# -----------------------------
+# ----------------------------------------------------
 @app.route("/")
 def home():
     return render_template("loan_eligibility.html")
 
 
-# -----------------------------
+# ----------------------------------------------------
 # Prediction API
-# -----------------------------
+# ----------------------------------------------------
 @app.route("/api/predict", methods=["POST"])
 def predict():
-
-    if model is None:
-        return jsonify({
-            "error": "Model not loaded. Check Vercel Runtime Logs."
-        }), 500
 
     try:
 
         data = request.get_json()
 
-        required = [
+        if not data:
+            return jsonify({"error": "No JSON data received"}), 400
+
+        required_fields = [
             "age",
             "income",
             "credit_score",
@@ -72,11 +69,12 @@ def predict():
             "num_accounts"
         ]
 
-        for field in required:
-            if field not in data:
-                return jsonify({
-                    "error": f"Missing field: {field}"
-                }), 400
+        missing = [field for field in required_fields if field not in data]
+
+        if missing:
+            return jsonify({
+                "error": f"Missing fields: {missing}"
+            }), 400
 
         input_df = pd.DataFrame([{
             "age": data["age"],
@@ -89,15 +87,16 @@ def predict():
 
         prediction = model.predict(input_df)
 
-        result = int(prediction[0])
+        prediction = int(prediction[0])
 
         return jsonify({
-            "prediction": result,
-            "eligibility": "Eligible" if result == 1 else "Not Eligible"
+            "prediction": prediction,
+            "eligibility": "Eligible" if prediction == 1 else "Not Eligible"
         })
 
     except Exception:
         traceback.print_exc()
+
         return jsonify({
             "error": traceback.format_exc()
         }), 500
